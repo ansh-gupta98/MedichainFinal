@@ -6,6 +6,7 @@
 FROM python:3.11-slim
 
 # Install system libs needed by OpenCV and InsightFace
+# build-essential + g++ needed to compile InsightFace Cython extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libsm6 \
@@ -14,6 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libgomp1 \
     wget \
+    build-essential \
+    g++ \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
