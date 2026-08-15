@@ -8,7 +8,10 @@ Handles:
 - Patient profile upsert
 """
 
+import json
 import logging
+import os
+import tempfile
 from typing import Optional, Dict, Any, List, Tuple
 
 import numpy as np
@@ -32,11 +35,17 @@ class FirebaseService:
     # ─────────────────────────────────────────────────────────────────────────
 
     def initialize(self) -> None:
-        """Initialize Firebase Admin SDK. Safe to call multiple times."""
+        """
+        Initialize Firebase Admin SDK.
+        Supports two ways to provide credentials (in priority order):
+
+        1. FIREBASE_CREDENTIALS_JSON env var — full JSON string (Render recommended)
+        2. FIREBASE_CREDENTIALS_PATH env var — path to JSON file (local dev)
+        """
         if self._initialized:
             return
         try:
-            cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+            cred = self._load_credentials()
             # Only initialize if not already done (handles hot-reload scenarios)
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred)
@@ -46,6 +55,39 @@ class FirebaseService:
         except Exception as e:
             logger.error(f"Firebase initialization failed: {e}")
             raise
+
+    def _load_credentials(self) -> credentials.Certificate:
+        """
+        Load Firebase credentials.
+
+        Priority:
+          1. FIREBASE_CREDENTIALS_JSON env var (JSON string) — used on Render
+          2. FIREBASE_CREDENTIALS_PATH file path            — used locally
+        """
+        # ── Method 1: JSON string from environment variable (Render) ─────────
+        creds_json_str = os.environ.get("FIREBASE_CREDENTIALS_JSON", "").strip()
+        if creds_json_str:
+            logger.info("Loading Firebase credentials from FIREBASE_CREDENTIALS_JSON env var.")
+            try:
+                creds_dict = json.loads(creds_json_str)
+                return credentials.Certificate(creds_dict)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"FIREBASE_CREDENTIALS_JSON is not valid JSON: {e}\n"
+                    "Make sure you pasted the entire firebase_credentials.json content."
+                )
+
+        # ── Method 2: File path (local development) ───────────────────────────
+        file_path = settings.FIREBASE_CREDENTIALS_PATH
+        if os.path.exists(file_path):
+            logger.info(f"Loading Firebase credentials from file: {file_path}")
+            return credentials.Certificate(file_path)
+
+        raise FileNotFoundError(
+            "Firebase credentials not found! Provide either:\n"
+            "  • FIREBASE_CREDENTIALS_JSON env var (paste your JSON content), OR\n"
+            f"  • A file at: {file_path}"
+        )
 
     @property
     def db(self):
