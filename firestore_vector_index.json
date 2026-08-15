@@ -1,0 +1,13 @@
+{
+  "collectionGroup": "patients",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "face_embedding",
+      "vectorConfig": {
+        "dimension": 512,
+        "flat": {}
+      }
+    }
+  ]
+}

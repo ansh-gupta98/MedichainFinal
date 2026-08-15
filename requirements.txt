@@ -1,0 +1,24 @@
+# ─── Core Framework ────────────────────────────────────────────────────────
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12        # required for UploadFile / Form support
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# ─── Face Recognition ─────────────────────────────────────────────────────
+insightface==0.7.3
+onnxruntime==1.20.1             # CPU inference; use onnxruntime-gpu for CUDA
+opencv-python-headless==4.10.0.84  # headless: no GUI dependencies (server)
+numpy==1.26.4
+
+# ─── Firebase ─────────────────────────────────────────────────────────────
+firebase-admin==6.6.0
+google-cloud-firestore==2.19.0
+
+# ─── Cerebras AI ──────────────────────────────────────────────────────────
+cerebras-cloud-sdk==1.21.0
+
+# ─── Utilities ────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+httpx==0.28.0                   # async HTTP client (useful for tests)
+Pillow==11.0.0                  # image format support
