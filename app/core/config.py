@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
 
     # ── InsightFace ───────────────────────────────────────────────────────────
-    # buffalo_l  = ArcFace R100 (highest accuracy, ~150ms CPU)
-    # buffalo_sc = ArcFace R50  (faster, slightly lower accuracy)
-    INSIGHTFACE_MODEL: str = "buffalo_l"
+    # buffalo_sc = ArcFace R50  (~150MB RAM) ← USE THIS on Render Free tier
+    # buffalo_l  = ArcFace R100 (~500MB RAM) ← Use on Render Standard (2GB RAM)
+    INSIGHTFACE_MODEL: str = "buffalo_sc"
     INSIGHTFACE_DET_SIZE: int = 640       # detection image size (px)
     FACE_MATCH_THRESHOLD: float = 0.45   # cosine distance threshold (lower = stricter)
     # Cosine distance range: 0 (identical) → 2 (opposite). 0.45 = ~99%+ confidence

@@ -14,10 +14,9 @@ from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load heavy models once at startup, release on shutdown."""
+    """Startup: Firebase init only. InsightFace loads lazily on first request."""
     print("🚀 MediChain Backend starting...")
-    face_service.load_model()
-    print("✅ InsightFace ArcFace model loaded successfully.")
+    print("ℹ️  InsightFace will load on first request (lazy loading).")
     yield
     print("🔴 MediChain Backend shutting down...")
 

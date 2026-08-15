@@ -27,14 +27,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Pre-download InsightFace buffalo_l model during build
-# This avoids cold-start delay on first request
+# Pre-download InsightFace buffalo_sc model during build
+# buffalo_sc = ArcFace R50 — 150MB RAM (fits Render Free 512MB)
+# buffalo_l  = ArcFace R100 — 500MB RAM (needs Render Standard 2GB)
 RUN python -c "\
 import insightface; \
 from insightface.app import FaceAnalysis; \
-app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider']); \
+app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider']); \
 app.prepare(ctx_id=-1, det_size=(640, 640)); \
-print('InsightFace buffalo_l model downloaded successfully.')"
+print('InsightFace buffalo_sc model downloaded successfully.')"
 
 # Copy application code
 COPY . .

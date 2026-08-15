@@ -32,24 +32,30 @@ class FaceService:
     # ─────────────────────────────────────────────────────────────────────────
 
     def load_model(self) -> None:
-        """Load InsightFace buffalo_l model. Called once at FastAPI startup."""
+        """Load InsightFace model. Auto-called on first use (lazy loading)."""
+        if self._loaded:
+            return
         try:
+            logger.info(f"Loading InsightFace model '{settings.INSIGHTFACE_MODEL}'...")
             self._app = FaceAnalysis(
                 name=settings.INSIGHTFACE_MODEL,
-                # Prefer CUDA GPU if available, fall back to CPU silently
-                providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+                # CPUExecutionProvider only — no GPU on Render free tier
+                providers=["CPUExecutionProvider"],
             )
             self._app.prepare(
-                ctx_id=0,
+                ctx_id=-1,   # -1 = CPU mode (no GPU)
                 det_size=(settings.INSIGHTFACE_DET_SIZE, settings.INSIGHTFACE_DET_SIZE),
             )
             self._loaded = True
-            logger.info(
-                f"InsightFace model '{settings.INSIGHTFACE_MODEL}' loaded successfully."
-            )
+            logger.info(f"InsightFace model '{settings.INSIGHTFACE_MODEL}' loaded ✅")
         except Exception as e:
             logger.error(f"Failed to load InsightFace model: {e}")
             raise
+
+    def _ensure_loaded(self) -> None:
+        """Auto-load model on first request (lazy loading pattern)."""
+        if not self._loaded:
+            self.load_model()
 
     @property
     def is_loaded(self) -> bool:
@@ -70,13 +76,14 @@ class FaceService:
     def extract_embedding(self, image_bytes: bytes) -> Tuple[Optional[np.ndarray], str]:
         """
         Extract 512-D ArcFace embedding from a single image.
+        Auto-loads the model on first call (lazy loading).
 
         Returns:
             (embedding_array, status_message)
             embedding_array is None if extraction fails.
         """
-        if not self._loaded:
-            raise RuntimeError("InsightFace model is not loaded. Call load_model() first.")
+        # Lazy load — safe to call multiple times, loads only once
+        self._ensure_loaded()
 
         try:
             img_bgr = self._bytes_to_bgr(image_bytes)
