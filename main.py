@@ -9,14 +9,31 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import patient, doctor, health
 from app.services.face_service import face_service
+from app.services.firebase_service import firebase_service
 from app.core.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: Firebase init only. InsightFace loads lazily on first request."""
+    """
+    Startup:
+      - Firebase: initialize now (lightweight — just reads credentials)
+      - InsightFace: lazy load on first face request (heavy — 150MB model)
+    """
     print("🚀 MediChain Backend starting...")
-    print("ℹ️  InsightFace will load on first request (lazy loading).")
+
+    # Firebase — initialize at startup (fast, no model download)
+    try:
+        firebase_service.initialize()
+        print("✅ Firebase connected successfully.")
+    except Exception as e:
+        print(f"❌ Firebase init failed: {e}")
+        print("   Check FIREBASE_CREDENTIALS_JSON env variable on Render.")
+
+    # InsightFace — will load on first /doctor/identify or /patient/upload-photos call
+    print("ℹ️  InsightFace will load on first face request (lazy loading).")
+    print("✅ MediChain Backend ready!")
+
     yield
     print("🔴 MediChain Backend shutting down...")
 
