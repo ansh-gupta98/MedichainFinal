@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Dockerfile — MediChain FastAPI Backend
-# Optimized for Render deployment
+# Optimized for Railway deployment (no RAM restrictions)
+# Model: InsightFace buffalo_l (ArcFace R100) — BEST accuracy 99.83%
 # ─────────────────────────────────────────────────────────────────────────────
 
 FROM python:3.11-slim
@@ -27,22 +28,20 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Pre-download InsightFace buffalo_sc model during build
-# buffalo_sc = ArcFace R50 — 150MB RAM (fits Render Free 512MB)
-# buffalo_l  = ArcFace R100 — 500MB RAM (needs Render Standard 2GB)
+# Pre-download InsightFace buffalo_l model during build
+# buffalo_l = ArcFace R100 — 99.83% accuracy — best model available
+# Pre-downloading avoids cold-start delay on first request
 RUN python -c "\
-import insightface; \
 from insightface.app import FaceAnalysis; \
-app = FaceAnalysis(name='buffalo_sc', providers=['CPUExecutionProvider']); \
+app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider']); \
 app.prepare(ctx_id=-1, det_size=(640, 640)); \
-print('InsightFace buffalo_sc model downloaded successfully.')"
+print('InsightFace buffalo_l (ArcFace R100) downloaded successfully.')"
 
 # Copy application code
 COPY . .
 
-# Render uses PORT env variable
+# Railway / Render both use PORT env variable
 ENV PORT=8000
 
-# Run with uvicorn — single worker on Render free tier
-# Increase workers on paid tier for higher throughput
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers 1
+# Uvicorn with 2 workers for better throughput on Railway
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers 2

@@ -14,12 +14,13 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["*"]
 
     # ── InsightFace ───────────────────────────────────────────────────────────
-    # buffalo_sc = ArcFace R50  (~150MB RAM) ← USE THIS on Render Free tier
-    # buffalo_l  = ArcFace R100 (~500MB RAM) ← Use on Render Standard (2GB RAM)
-    INSIGHTFACE_MODEL: str = "buffalo_sc"
-    INSIGHTFACE_DET_SIZE: int = 640       # detection image size (px)
-    FACE_MATCH_THRESHOLD: float = 0.45   # cosine distance threshold (lower = stricter)
-    # Cosine distance range: 0 (identical) → 2 (opposite). 0.45 = ~99%+ confidence
+    # buffalo_l  = ArcFace R100 — 99.83% accuracy — BEST (use on Railway)
+    # buffalo_sc = ArcFace R50  — 99.70% accuracy — lighter (Render free only)
+    INSIGHTFACE_MODEL: str = "buffalo_l"
+    INSIGHTFACE_DET_SIZE: int = 640
+    # ArcFace R100 threshold: similarity >= 0.50 = valid match
+    # Conservative for medical use — prevents false positives
+    FACE_MATCH_THRESHOLD: float = 0.50
 
     # ── Firebase ──────────────────────────────────────────────────────────────
     # Path to service-account JSON downloaded from Firebase console

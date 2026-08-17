@@ -17,25 +17,30 @@ from app.core.config import settings
 async def lifespan(app: FastAPI):
     """
     Startup:
-      - Firebase: initialize now (lightweight — just reads credentials)
-      - InsightFace: lazy load on first face request (heavy — 150MB model)
+      - Firebase: initialize (lightweight)
+      - InsightFace buffalo_l: load at startup (Railway has enough RAM)
+        → Ensures EVERY request is fast, not just after first one
     """
-    print("🚀 MediChain Backend starting...")
+    print("MediChain Backend starting...")
 
-    # Firebase — initialize at startup (fast, no model download)
+    # Step 1: Firebase — fast, just reads credentials
     try:
         firebase_service.initialize()
-        print("✅ Firebase connected successfully.")
+        print("Firebase connected successfully.")
     except Exception as e:
-        print(f"❌ Firebase init failed: {e}")
-        print("   Check FIREBASE_CREDENTIALS_JSON env variable on Render.")
+        print(f"Firebase init failed: {e}")
+        print("Check FIREBASE_CREDENTIALS_JSON environment variable.")
 
-    # InsightFace — will load on first /doctor/identify or /patient/upload-photos call
-    print("ℹ️  InsightFace will load on first face request (lazy loading).")
-    print("✅ MediChain Backend ready!")
+    # Step 2: InsightFace buffalo_l — load once, serve forever
+    try:
+        face_service.load_model()
+        print("InsightFace buffalo_l (ArcFace R100) loaded successfully.")
+    except Exception as e:
+        print(f"InsightFace model load failed: {e}")
 
+    print("MediChain Backend is READY.")
     yield
-    print("🔴 MediChain Backend shutting down...")
+    print("MediChain Backend shutting down...")
 
 
 app = FastAPI(
