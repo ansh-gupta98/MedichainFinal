@@ -116,12 +116,6 @@ async def upload_patient_photos(
                 ),
             )
 
-    if not face_service.is_loaded:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Face recognition model is not ready. Try again shortly.",
-        )
-
     # ── Read all photo bytes ──────────────────────────────────────────────────
     image_bytes_list = []
     for photo in photos:

@@ -1,5 +1,5 @@
 """
-create_index.py — Run this ONCE before deploying to create the Firestore Vector Index.
+create_index.py - Run this ONCE to create the Firestore Vector Index.
 
 Usage:
     python create_index.py
@@ -10,6 +10,7 @@ so that KNN search works. Run it only once per Firebase project.
 
 import os
 import json
+import sys
 import requests
 from dotenv import load_dotenv
 
@@ -21,10 +22,19 @@ def get_access_token():
     import google.auth
     import google.auth.transport.requests
 
-    credentials_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "firebase_credentials.json")
+    # Always use relative path - run this script FROM the medichain folder
+    # Avoids Windows backslash escape issue (\f = form feed) from .env files
+    credentials_path = "firebase_credentials.json"
+
+    if not os.path.exists(credentials_path):
+        print("ERROR: firebase_credentials.json not found!")
+        print("  -> Make sure you are running from: C:\\Users\\hp\\Desktop\\medichain")
+        print("  -> Current directory: " + os.getcwd())
+        print("  -> File must be at: " + os.path.abspath(credentials_path))
+        sys.exit(1)
 
     # Load credentials from service account file
-    with open(credentials_path, "r") as f:
+    with open(credentials_path, "r", encoding="utf-8") as f:
         creds_data = json.load(f)
 
     project_id = creds_data.get("project_id")
@@ -47,28 +57,28 @@ def get_access_token():
 def create_vector_index():
     """Create Firestore vector index for face_embedding field."""
 
-    print("🔄 Getting access token from Firebase service account...")
+    print("Getting access token from Firebase service account...")
     try:
         token, project_id = get_access_token()
     except FileNotFoundError:
-        print("❌ ERROR: firebase_credentials.json not found!")
-        print("   → Download from Firebase Console → Project Settings → Service Accounts")
+        print("ERROR: firebase_credentials.json not found!")
+        print("  -> Download from Firebase Console -> Project Settings -> Service Accounts")
         return
 
-    print(f"✅ Authenticated. Project ID: {project_id}")
+    print("OK! Authenticated. Project ID: " + str(project_id))
 
     # Firestore REST API endpoint to create composite index
     url = (
-        f"https://firestore.googleapis.com/v1/"
-        f"projects/{project_id}/databases/(default)/collectionGroups/patients/indexes"
+        "https://firestore.googleapis.com/v1/"
+        "projects/" + project_id + "/databases/(default)/collectionGroups/patients/indexes"
     )
 
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": "Bearer " + token,
         "Content-Type": "application/json",
     }
 
-    # Vector index definition — 512-D, flat (exact KNN, not approximate)
+    # Vector index definition - 512-D, flat (exact KNN, not approximate)
     index_body = {
         "queryScope": "COLLECTION",
         "fields": [
@@ -76,40 +86,34 @@ def create_vector_index():
                 "fieldPath": "face_embedding",
                 "vectorConfig": {
                     "dimension": 512,
-                    "flat": {}      # flat = exact nearest neighbor search
+                    "flat": {}
                 }
             }
         ]
     }
 
-    print("🔄 Creating vector index on patients.face_embedding (dim=512)...")
+    print("Creating vector index on patients.face_embedding (dim=512)...")
     response = requests.post(url, headers=headers, json=index_body)
 
     if response.status_code == 200:
         data = response.json()
-        print("✅ Vector index creation started!")
-        print(f"   Operation: {data.get('name', 'N/A')}")
-        print()
-        print("⏳ Index creation takes 2–5 minutes to complete.")
-        print("   Check status at: https://console.firebase.google.com")
-        print("   Firestore → Indexes → you'll see it building.")
+        print("")
+        print("SUCCESS! Vector index creation started!")
+        print("Operation: " + str(data.get("name", "N/A")))
+        print("")
+        print("Index creation takes 2-5 minutes to complete.")
+        print("Check status at: https://console.firebase.google.com")
+        print("Go to: Firestore -> Indexes tab -> you will see it building.")
 
     elif response.status_code == 409:
-        print("ℹ️  Index already exists! Nothing to do.")
-        print("   Your KNN search is ready to use.")
+        print("")
+        print("Index already exists! Nothing to do.")
+        print("Your KNN search is ready to use.")
 
     else:
-        print(f"❌ Error creating index: {response.status_code}")
-        print(f"   Response: {response.text}")
-        print()
-        print("💡 Try the gcloud CLI instead:")
-        print(
-            "   gcloud firestore indexes composite create \\\n"
-            "     --collection-group=patients \\\n"
-            "     --query-scope=COLLECTION \\\n"
-            "     --field-config=field-path=face_embedding,"
-            "vector-config='{\"dimension\":\"512\",\"flat\":{}}'"
-        )
+        print("")
+        print("Error creating index. Status code: " + str(response.status_code))
+        print("Response: " + response.text)
 
 
 if __name__ == "__main__":

@@ -79,12 +79,6 @@ async def identify_patient(
             detail=f"Unsupported file type '{photo.content_type}'. Use JPEG, PNG, or WEBP.",
         )
 
-    if not face_service.is_loaded:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Face recognition model is not ready. Try again shortly.",
-        )
-
     # ── Step 1: Read photo bytes ──────────────────────────────────────────────
     photo_bytes = await photo.read()
     logger.info(
